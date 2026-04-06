@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: WhatsApp AI Chatbot Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: conversations
+    description: WhatsApp conversation operations
+  - name: messages
+    description: Message operations
+  - name: summaries
+    description: Chat summary operations
+  - name: settings
+    description: n8n workflow settings
+  - name: stats
+    description: Dashboard statistics
 paths:
   /healthz:
     get:
@@ -24,6 +34,184 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List all conversations
+      description: Returns all WhatsApp conversations grouped by contact
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a single conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversations/{id}/messages:
+    get:
+      operationId: getConversationMessages
+      tags: [messages]
+      summary: Get messages for a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+  /conversations/{id}/summarize:
+    post:
+      operationId: summarizeConversation
+      tags: [summaries]
+      summary: Trigger summarization for a conversation
+      description: Calls the n8n summarizer workflow for this conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Summary result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SummaryResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: n8n workflow error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /messages:
+    post:
+      operationId: createMessage
+      tags: [messages]
+      summary: Create a new message (called by n8n webhook)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMessageBody"
+      responses:
+        "201":
+          description: Message created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /summaries:
+    get:
+      operationId: listSummaries
+      tags: [summaries]
+      summary: List all summaries
+      responses:
+        "200":
+          description: Summaries list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Summary"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get n8n workflow settings
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update n8n workflow settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsBody"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /stats:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +222,158 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        contactName:
+          type: string
+        contactPhone:
+          type: string
+        lastMessage:
+          type: ["string", "null"]
+        lastMessageAt:
+          type: ["string", "null"]
+        messageCount:
+          type: integer
+        hasSummary:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - contactName
+        - contactPhone
+        - lastMessage
+        - lastMessageAt
+        - messageCount
+        - hasSummary
+        - createdAt
+        - updatedAt
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        timestamp:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - timestamp
+        - createdAt
+
+    CreateMessageBody:
+      type: object
+      properties:
+        contactName:
+          type: string
+        contactPhone:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - contactPhone
+        - role
+        - content
+
+    Summary:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - conversationId
+        - content
+        - createdAt
+
+    SummaryResult:
+      type: object
+      properties:
+        summary:
+          $ref: "#/components/schemas/Summary"
+        message:
+          type: string
+      required:
+        - summary
+        - message
+
+    Settings:
+      type: object
+      properties:
+        id:
+          type: integer
+        chatbotWebhookUrl:
+          type: ["string", "null"]
+        summarizerWebhookUrl:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+      required:
+        - id
+        - chatbotWebhookUrl
+        - summarizerWebhookUrl
+        - updatedAt
+
+    UpdateSettingsBody:
+      type: object
+      properties:
+        chatbotWebhookUrl:
+          type: ["string", "null"]
+        summarizerWebhookUrl:
+          type: ["string", "null"]
+
+    DashboardStats:
+      type: object
+      properties:
+        totalConversations:
+          type: integer
+        totalMessages:
+          type: integer
+        totalSummaries:
+          type: integer
+        messagesLast24h:
+          type: integer
+        activeConversations:
+          type: integer
+      required:
+        - totalConversations
+        - totalMessages
+        - totalSummaries
+        - messagesLast24h
+        - activeConversations
