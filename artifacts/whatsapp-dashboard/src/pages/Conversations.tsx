@@ -20,7 +20,7 @@ export function Conversations() {
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {isLoading ? (
           [...Array(5)].map((_, i) => (
             <Card key={i} className="p-6 animate-pulse">
