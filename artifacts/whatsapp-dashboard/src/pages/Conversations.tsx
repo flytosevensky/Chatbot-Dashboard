@@ -20,7 +20,7 @@ export function Conversations() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="flex flex-col gap-4">
         {isLoading ? (
           [...Array(5)].map((_, i) => (
             <Card key={i} className="p-6 animate-pulse">
@@ -35,7 +35,7 @@ export function Conversations() {
           ))
         ) : conversations?.length ? (
           conversations.map((conv) => (
-            <Link key={conv.id} href={`/conversations/${conv.id}`}>
+            <Link key={conv.id} href={`/conversations/${conv.id}`} className="block">
               <Card className="p-4 hover:shadow-md transition-all cursor-pointer group">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
