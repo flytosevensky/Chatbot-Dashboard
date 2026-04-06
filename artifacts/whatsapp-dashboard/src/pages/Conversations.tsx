@@ -44,7 +44,6 @@ export function Conversations() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
                       <h3 className="font-semibold text-lg truncate">{conv.contactName}</h3>
-                      <span className="text-sm text-muted-foreground">{conv.contactPhone}</span>
                       {conv.hasSummary && (
                         <Badge variant="secondary" className="text-xs font-normal">Summarized</Badge>
                       )}
